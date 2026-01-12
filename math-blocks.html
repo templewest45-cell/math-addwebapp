@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>あわせていくつ？</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #fffaf0;
+            /* Cream */
+            --primary-color: #2dd4bf;
+            /* Teal for header */
+            --tray-border: #e2e8f0;
+            --tray-bg: #ffffff;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-combined: #d97706;
+            --text-color: #334155;
+            --success-color: #22c55e;
+        }
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            /* Prevent text selection during drag */
+            touch-action: none;
+            /* Prevent scrolling while dragging elements */
+        }
+
+        /* Header / Teacher Input */
+        .header-container {
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .title-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 24px;
+            border-radius: 12px 12px 0 0;
+            font-weight: bold;
+            display: inline-block;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-card {
+            background: white;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .input-label {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        #formula-input {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            border: none;
+            border-bottom: 4px solid var(--primary-color);
+            width: 180px;
+            outline: none;
+            color: var(--text-color);
+            font-family: inherit;
+        }
+
+        #formula-input:focus {
+            border-bottom-color: #0f766e;
+        }
+
+        /* Main Game Area */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 80px;
+            /* Space for reset button */
+        }
+
+        /* Middle Section: Source Trays */
+        .source-section {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            /* Align top so numbers don't stretch */
+            gap: 10px;
+        }
+
+        .tray-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tray {
+            background: var(--tray-bg);
+            border: 4px solid var(--tray-border);
+            border-radius: 20px;
+            min-height: 160px;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .tray.target {
+            border: 4px dashed #cbd5e1;
+            background-color: #fff7ed;
+            /* Light orange tint */
+            min-height: 200px;
+        }
+
+        .tray.drag-over {
+            background-color: #f0fdf4;
+            /* Light green tint on hover */
+            border-color: #86efac;
+            transform: scale(1.01);
+        }
+
+        .plus-sign {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #94a3b8;
+            margin-top: 60px;
+            /* Center with tray roughly */
+        }
+
+        .tray-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #64748b;
+            background: white;
+            padding: 5px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Target Section */
+        .target-section {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .target-label {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #d97706;
+            margin-bottom: 5px;
+        }
+
+        .answer-input {
+            margin-top: 15px;
+            font-size: 2.5rem;
+            width: 100px;
+            text-align: center;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 5px;
+            outline: none;
+            font-weight: bold;
+            color: var(--accent-combined);
+            font-family: inherit;
+        }
+
+        .answer-input:focus {
+            border-color: var(--accent-combined);
+        }
+
+        .answer-input.correct {
+            border-color: var(--success-color);
+            background-color: #dcfce7;
+            color: var(--success-color);
+        }
+
+        /* Block (The Draggable Item) */
+        .block {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            cursor: grab;
+            position: relative;
+            /* For z-index context */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 -4px 4px rgba(0, 0, 0, 0.1);
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            flex-shrink: 0;
+            touch-action: none;
+        }
+
+        .block::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .block:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+            z-index: 1000;
+        }
+
+        .block.red {
+            background-color: var(--accent-red);
+        }
+
+        .block.yellow {
+            background-color: var(--accent-yellow);
+        }
+
+        /* Draggable Styles */
+        .block.dragging {
+            opacity: 0.8;
+            position: fixed;
+            /* Fixed allows movement outside relatively positioned parents */
+            z-index: 9999;
+            pointer-events: none;
+            /* Let events pass through to find drop target */
+            margin: 0;
+            top: 0;
+            left: 0;
+        }
+
+        /* Placeholder for where the item was */
+        .block-placeholder {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+        }
+
+        /* Footer / Reset */
+        .footer-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            /* Let clicks pass through except button */
+        }
+
+        .reset-btn {
+            pointer-events: auto;
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s, background 0.2s;
+            font-family: inherit;
+        }
+
+        .reset-btn:active {
+            transform: scale(0.95);
+        }
+
+        .reset-btn:hover {
+            background: #475569;
+        }
+
+        /* Success Overlay */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .success-message {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--success-color);
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .success-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-overlay.show .success-message {
+            transform: scale(1);
+        }
+
+        @media (max-width: 600px) {
+            #formula-input {
+                font-size: 1.5rem;
+                width: 140px;
+            }
+
+            .block {
+                width: 40px;
+                height: 40px;
+            }
+
+            .block-placeholder {
+                width: 40px;
+                height: 40px;
+            }
+
+            .tray {
+                min-height: 120px;
+            }
+
+            .tray-number {
+                font-size: 1.5rem;
+            }
+
+            .plus-sign {
+                margin-top: 40px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header-container">
+        <div class="title-badge">教材名</div>
+        <div class="input-card">
+            <label class="input-label">式を入力してください</label>
+            <input type="text" id="formula-input" value="3 + 2" placeholder="例: 3 + 2">
+        </div>
+    </div>
+
+    <div class="game-area">
+        <!-- Top Row: Sources -->
+        <div class="source-section">
+            <!-- Left Group -->
+            <div class="tray-group">
+                <div class="tray" id="tray-left">
+                    <!-- Blocks will go here -->
+                </div>
+                <div class="tray-number" id="num-left">3</div>
+            </div>
+
+            <div class="plus-sign">と</div>
+
+            <!-- Right Group -->
+            <div class="tray-group">
+                <div class="tray" id="tray-right">
+                    <!-- Blocks will go here -->
+                </div>
+                <div class="tray-number" id="num-right">2</div>
+            </div>
+        </div>
+
+        <!-- Bottom Row: Target -->
+        <div class="target-section">
+            <div class="target-label">あわせて</div>
+            <div class="tray target" id="tray-combined" style="max-width: 600px;">
+                <!-- Dropped blocks go here -->
+            </div>
+
+            <input type="number" id="answer-input" class="answer-input" placeholder="?" min="0" max="99">
+        </div>
+    </div>
+
+    <div class="footer-controls">
+        <button class="reset-btn" onclick="resetGame()">リセット</button>
+    </div>
+
+    <div class="success-overlay" id="success-overlay" onclick="hideSuccess()">
+        <div class="success-message">正解！🎉</div>
+    </div>
+
+    <script>
+        // --- State ---
+        let nextId = 1;
+        let audioCtx = null;
+
+        // --- Elements ---
+        const inputEl = document.getElementById('formula-input');
+        const trayLeft = document.getElementById('tray-left');
+        const trayRight = document.getElementById('tray-right');
+        const trayCombined = document.getElementById('tray-combined');
+
+        const numLeft = document.getElementById('num-left');
+        const numRight = document.getElementById('num-right');
+        const answerInput = document.getElementById('answer-input');
+        const successOverlay = document.getElementById('success-overlay');
+
+        const trays = [trayLeft, trayRight, trayCombined];
+
+        // --- Init ---
+        function init() {
+            parseAndReset();
+            inputEl.addEventListener('input', parseAndReset);
+            answerInput.addEventListener('input', checkAnswer);
+
+            // Mobile (Touch) events need to be attached to document or handled carefully
+            document.addEventListener('touchmove', function (e) {
+                if (dragState.isDragging) e.preventDefault(); // Prevent scrolling
+            }, { passive: false });
+        }
+
+        // --- Game Logic ---
+        function resetGame() {
+            parseAndReset();
+        }
+
+        function parseAndReset() {
+            const val = inputEl.value;
+            const match = val.match(/(\d+)\s*\+\s*(\d+)/);
+
+            // Clear UI
+            trayLeft.innerHTML = '';
+            trayRight.innerHTML = '';
+            trayCombined.innerHTML = '';
+            answerInput.value = '';
+            answerInput.classList.remove('correct');
+            hideSuccess();
+
+            if (match) {
+                const l = Math.min(parseInt(match[1]), 20);
+                const r = Math.min(parseInt(match[2]), 20);
+
+                // Update Numbers
+                numLeft.textContent = l;
+                numRight.textContent = r;
+
+                // Create Blocks
+                createBlocks(l, 'red', trayLeft);
+                createBlocks(r, 'yellow', trayRight);
+            }
+        }
+
+        function createBlocks(count, colorClass, parentElement) {
+            for (let i = 0; i < count; i++) {
+                const block = document.createElement('div');
+                block.className = `block ${colorClass}`;
+                block.id = `blk-${nextId++}`;
+                // Store data
+                block.dataset.color = colorClass;
+
+                // Add mouse/touch listeners for drag
+                addDragListeners(block);
+
+                parentElement.appendChild(block);
+            }
+        }
+
+        function checkAnswer() {
+            const userVal = parseInt(answerInput.value);
+            const actualCount = trayCombined.children.length; // Count only blocks in bottom tray
+
+            if (!isNaN(userVal) && userVal === actualCount && actualCount > 0) {
+                if (!answerInput.classList.contains('correct')) {
+                    showSuccess();
+                }
+            } else {
+                answerInput.classList.remove('correct');
+            }
+        }
+
+        function showSuccess() {
+            answerInput.classList.add('correct');
+            successOverlay.classList.add('show');
+            playFanfare();
+            setTimeout(hideSuccess, 2000);
+        }
+
+        function hideSuccess() {
+            successOverlay.classList.remove('show');
+        }
+
+        // --- Audio (Web Audio API) ---
+        function playFanfare() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+
+            // Major Triad (C E G C)
+            playTone(523.25, now, 0.1);       // C5
+            playTone(659.25, now + 0.1, 0.1); // E5
+            playTone(783.99, now + 0.2, 0.1); // G5
+            playTone(1046.50, now + 0.3, 0.6); // C6
+        }
+
+        function playTone(freq, time, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + duration); // Fade out
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+
+        // --- Drag and Drop Logic (Vanilla JS) ---
+        let dragState = {
+            isDragging: false,
+            element: null,
+            placeholder: null,
+            startX: 0,
+            startY: 0,
+            offsetX: 0,
+            offsetY: 0,
+            originalParent: null
+        };
+
+        function addDragListeners(el) {
+            el.addEventListener('mousedown', onDragStart);
+            el.addEventListener('touchstart', onDragStart, { passive: false });
+        }
+
+        function onDragStart(e) {
+            e.preventDefault(); // Prevent text selection/scroll
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            dragState.isDragging = true;
+            dragState.element = e.target;
+            dragState.originalParent = e.target.parentElement;
+
+            // Create placeholder
+            dragState.placeholder = document.createElement('div');
+            dragState.placeholder.className = 'block-placeholder';
+            dragState.originalParent.insertBefore(dragState.placeholder, dragState.element);
+
+            // Style element for dragging
+            const rect = dragState.element.getBoundingClientRect();
+            dragState.offsetX = clientX - rect.left;
+            dragState.offsetY = clientY - rect.top;
+
+            dragState.element.classList.add('dragging');
+            dragState.element.style.width = rect.width + 'px';
+            dragState.element.style.height = rect.height + 'px';
+
+            // Move to body so it floats over everything
+            document.body.appendChild(dragState.element);
+            moveElement(clientX, clientY);
+
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+            document.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('touchend', onDragEnd);
+        }
+
+        function onDragMove(e) {
+            if (!dragState.isDragging) return;
+            // e.preventDefault(); // Done in init for touch
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            moveElement(clientX, clientY);
+
+            // Highlight potential drop target
+            highlightTrays(clientX, clientY);
+        }
+
+        function moveElement(x, y) {
+            if (dragState.element) {
+                dragState.element.style.transform = `translate(${x - dragState.offsetX}px, ${y - dragState.offsetY}px)`;
+            }
+        }
+
+        function onDragEnd(e) {
+            if (!dragState.isDragging) return;
+
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+            // Find drop target
+            const dropTarget = getTrayAt(clientX, clientY);
+
+            // Cleanup listeners
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            document.removeEventListener('touchmove', onDragMove);
+            document.removeEventListener('touchend', onDragEnd);
+
+            // Reset styles
+            dragState.element.classList.remove('dragging');
+            dragState.element.style.position = '';
+            dragState.element.style.transform = '';
+            dragState.element.style.width = '';
+            dragState.element.style.height = '';
+
+            // Remove highlight
+            trays.forEach(t => t.classList.remove('drag-over'));
+
+            if (dropTarget) {
+                // Success: move to new tray
+                dropTarget.appendChild(dragState.element);
+            } else {
+                // Return to original
+                if (dragState.placeholder.parentNode) {
+                    dragState.placeholder.parentNode.insertBefore(dragState.element, dragState.placeholder);
+                } else {
+                    dragState.originalParent.appendChild(dragState.element);
+                }
+            }
+
+            // Remove placeholder
+            if (dragState.placeholder && dragState.placeholder.parentNode) {
+                dragState.placeholder.parentNode.removeChild(dragState.placeholder);
+            }
+
+            dragState = { isDragging: false, element: null, placeholder: null };
+
+            // Check answer whenever a block moves
+            checkAnswer();
+        }
+
+        function getTrayAt(x, y) {
+            // Check collision with any tray
+            for (let tray of trays) {
+                const rect = tray.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                    return tray;
+                }
+            }
+            return null;
+        }
+
+        function highlightTrays(x, y) {
+            trays.forEach(tray => tray.classList.remove('drag-over'));
+            const target = getTrayAt(x, y);
+            if (target) {
+                target.classList.add('drag-over');
+            }
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+
+</html>
