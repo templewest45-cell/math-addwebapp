@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>あわせていくつ？</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #fffaf0;
+            --primary-color: #2dd4bf;
+            --tray-border: #e2e8f0;
+            --tray-bg: #ffffff;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-combined: #d97706;
+            --text-color: #334155;
+            --success-color: #22c55e;
+            --error-color: #3b82f6;
+
+            --block-size: 55px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100dvh;
+            /* Dynamic viewport height */
+            overflow: hidden;
+            /* Lock scroll */
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* --- Header --- */
+        .header-container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            position: relative;
+            flex-shrink: 0;
+            margin-bottom: 10px;
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 0;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #94a3b8;
+            z-index: 10;
+        }
+
+        .title-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 12px 12px 0 0;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .input-card {
+            background: white;
+            padding: 10px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .formula-num {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            border: none;
+            border-bottom: 3px solid var(--primary-color);
+            width: 70px;
+            outline: none;
+            color: var(--text-color);
+            font-family: inherit;
+        }
+
+        /* --- Game Area --- */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 800px;
+            flex: 1;
+            /* Take remaining space */
+            min-height: 0;
+            /* Allow shrinking */
+            position: relative;
+        }
+
+        .source-section {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 8px;
+            flex: 1;
+            /* Distribute space */
+        }
+
+        .tray-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            height: 100%;
+        }
+
+        .tray {
+            background: var(--tray-bg);
+            border: 3px solid var(--tray-border);
+            border-radius: 16px;
+            width: 100%;
+            padding: 8px;
+
+            /* Responsive Grid */
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-auto-rows: max-content;
+            justify-items: center;
+            align-content: start;
+            gap: 5px;
+
+            overflow-y: auto;
+            /* Internal scroll if really needed */
+            flex: 1;
+        }
+
+        .tray.target {
+            border: 3px dashed #cbd5e1;
+            background-color: #fff7ed;
+            flex: 1.2;
+            /* Give slightly more space to target */
+        }
+
+        .tray-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #64748b;
+            background: white;
+            padding: 2px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+            line-height: 1.2;
+        }
+
+        .plus-sign {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #94a3b8;
+            margin-top: 20%;
+        }
+
+        /* --- Footer / Answer Section --- */
+        .target-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1.5;
+            /* More space for target area */
+            gap: 5px;
+        }
+
+        .target-label {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #d97706;
+            margin: 0;
+        }
+
+        .controls-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .answer-input {
+            font-size: 2rem;
+            width: 80px;
+            text-align: center;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 2px;
+            outline: none;
+            font-weight: bold;
+            color: var(--accent-combined);
+            font-family: inherit;
+        }
+
+        .answer-input.correct {
+            border-color: var(--success-color);
+            background-color: #dcfce7;
+        }
+
+        .answer-input.error {
+            border-color: var(--error-color);
+            background-color: #eff6ff;
+        }
+
+        .check-btn {
+            background: var(--accent-combined);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .check-btn:active {
+            transform: scale(0.95);
+        }
+
+        .reset-btn {
+            background: #94a3b8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* --- Block --- */
+        .block {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 50%;
+            background-color: #ccc;
+            cursor: grab;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1), inset 0 -3px 3px rgba(0, 0, 0, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            flex-shrink: 0;
+            touch-action: none;
+        }
+
+        .block::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .block.red {
+            background-color: var(--accent-red);
+        }
+
+        .block.yellow {
+            background-color: var(--accent-yellow);
+        }
+
+        .block.dragging {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .block-placeholder {
+            width: var(--block-size);
+            height: var(--block-size);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Settings Modal --- */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        /* --- Overlays --- */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .overlay-msg {
+            font-size: 3.5rem;
+            font-weight: bold;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+
+        .overlay.show .overlay-msg {
+            transform: scale(1);
+        }
+
+        .msg-success {
+            color: var(--success-color);
+        }
+
+        .msg-close {
+            color: var(--error-color);
+        }
+
+        /* Mobile specific adjustments to fit 100dvh without overlap */
+        @media (max-width: 600px) {
+            :root {
+                --block-size: 38px;
+            }
+
+            /* Smaller blocks */
+
+            body {
+                padding: 5px;
+            }
+
+            .header-container {
+                margin-bottom: 5px;
+            }
+
+            .input-card {
+                padding: 5px;
+            }
+
+            #formula-input {
+                font-size: 1.5rem;
+                width: 120px;
+            }
+
+            .game-area {
+                gap: 5px;
+            }
+
+            .tray {
+                padding: 5px;
+                border-width: 2px;
+                border-radius: 12px;
+                gap: 4px;
+            }
+
+            .tray-number {
+                font-size: 1.2rem;
+                padding: 0 12px;
+            }
+
+            .plus-sign {
+                font-size: 1.2rem;
+                margin-top: 40px;
+            }
+
+            .target-label {
+                font-size: 0.9rem;
+            }
+
+            .answer-input {
+                font-size: 1.5rem;
+                width: 70px;
+            }
+
+            .check-btn {
+                font-size: 1rem;
+                padding: 6px 16px;
+            }
+
+            .reset-btn {
+                font-size: 0.9rem;
+                padding: 6px 12px;
+            }
+
+            /* Ensure modal isn't cut off */
+            .modal h2 {
+                margin-top: 0;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header-container">
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
+        <div class="input-card">
+            <!-- Split inputs for formula -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="number" id="input-left" value="3" class="formula-num" min="1" max="12">
+                <span style="font-size: 2rem; font-weight: bold; color: var(--text-color);">+</span>
+                <input type="number" id="input-right" value="2" class="formula-num" min="1" max="12">
+            </div>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <div class="source-section">
+            <div class="tray-group">
+                <div class="tray" id="tray-left"></div>
+                <div class="tray-number" id="num-left">3</div>
+            </div>
+            <div class="plus-sign">と</div>
+            <div class="tray-group">
+                <div class="tray" id="tray-right"></div>
+                <div class="tray-number" id="num-right">2</div>
+            </div>
+        </div>
+
+        <div class="target-section">
+            <div class="target-label">あわせて</div>
+            <div class="tray target" id="tray-combined"></div>
+
+            <div class="controls-container">
+                <input type="number" id="answer-input" class="answer-input" placeholder="?" min="0" max="99">
+                <button class="check-btn" onclick="checkAnswer()">こたえる</button>
+                <button class="reset-btn" onclick="resetGame()">リセット</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals & Overlays -->
+    <div class="overlay" id="success-overlay">
+        <div class="overlay-msg msg-success">正解！🎉</div>
+    </div>
+    <div class="overlay" id="close-overlay">
+        <div class="overlay-msg msg-close">おしい！🥺</div>
+    </div>
+    <div class="overlay" id="error-overlay">
+        <div class="overlay-msg msg-close" style="font-size: 3rem;">12までのすうじにしてね🙏</div>
+    </div>
+
+    <div class="modal-backdrop" id="settings-modal">
+        <div class="modal">
+            <h2>設定</h2>
+            <div style="margin-bottom:15px">
+                <label>左の色 (<span style="color:#ef4444">■</span>)</label>
+                <input type="color" id="color-left" value="#ef4444" style="width:100%; height:40px; display:block"
+                    onchange="updateSettings()">
+            </div>
+            <div style="margin-bottom:15px">
+                <label>右の色 (<span style="color:#f59e0b">■</span>)</label>
+                <input type="color" id="color-right" value="#f59e0b" style="width:100%; height:40px; display:block"
+                    onchange="updateSettings()">
+            </div>
+            <div style="margin-bottom:15px">
+                <label>ブロックサイズ</label>
+                <input type="range" id="size-slider" min="30" max="60" value="38" style="width:100%"
+                    oninput="updateSettings()">
+            </div>
+            <button onclick="closeSettings()"
+                style="width:100%; padding:10px; background:var(--primary-color); color:white; border:none; border-radius:8px; font-weight:bold;">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let nextId = 1;
+        let audioCtx = null;
+        let isProcessingSuccess = false;
+
+        // --- Elements ---
+        // --- Elements ---
+        const inputLeft = document.getElementById('input-left');
+        const inputRight = document.getElementById('input-right');
+        const trayLeft = document.getElementById('tray-left');
+        const trayRight = document.getElementById('tray-right');
+        const trayCombined = document.getElementById('tray-combined');
+        const numLeft = document.getElementById('num-left');
+        const numRight = document.getElementById('num-right');
+        const answerInput = document.getElementById('answer-input');
+        const successOverlay = document.getElementById('success-overlay');
+        const closeOverlay = document.getElementById('close-overlay');
+        const errorOverlay = document.getElementById('error-overlay');
+
+        function showError() {
+            errorOverlay.classList.add('show');
+            setTimeout(() => {
+                errorOverlay.classList.remove('show');
+            }, 1500);
+        }
+
+        // Settings Elements
+        const settingsModal = document.getElementById('settings-modal');
+        const colorLeftInput = document.getElementById('color-left');
+        const colorRightInput = document.getElementById('color-right');
+        const sizeSlider = document.getElementById('size-slider');
+
+        const trays = [trayLeft, trayRight, trayCombined];
+
+        // --- Init ---
+        function init() {
+            parseAndReset();
+            inputLeft.addEventListener('input', parseAndReset);
+            inputRight.addEventListener('input', parseAndReset);
+
+            // Remove 'input' listener for validation
+            // Add keydown for Enter key
+            answerInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') checkAnswer();
+            });
+
+            // Mobile Optimization: prevent pull-to-refresh / unexpected scrolling
+            document.body.addEventListener('touchmove', function (e) {
+                if (dragState.isDragging || e.target.closest('.modal')) {
+                    // allow drag or modal scroll if needed (though modal is small)
+                } else {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        // --- Logic ---
+        function resetGame() {
+            parseAndReset();
+        }
+
+        function parseAndReset() {
+            let l = parseInt(inputLeft.value) || 0;
+            let r = parseInt(inputRight.value) || 0;
+
+            if (l > 12 || r > 12) {
+                showError();
+                if (l > 12) { l = 12; inputLeft.value = 12; }
+                if (r > 12) { r = 12; inputRight.value = 12; }
+            }
+
+            // Cap visual blocks
+            l = Math.min(Math.max(0, l), 25);
+            r = Math.min(Math.max(0, r), 25);
+
+            // Update UI Numbers
+            numLeft.textContent = l;
+            numRight.textContent = r;
+
+            // Clear UI
+            trayLeft.innerHTML = '';
+            trayRight.innerHTML = '';
+            trayCombined.innerHTML = '';
+            answerInput.value = '';
+            answerInput.classList.remove('correct');
+            answerInput.classList.remove('error');
+            successOverlay.classList.remove('show');
+            closeOverlay.classList.remove('show');
+            isProcessingSuccess = false;
+
+            createBlocks(l, 'red', trayLeft);
+            createBlocks(r, 'yellow', trayRight);
+        }
+
+        function createBlocks(count, colorClass, parentElement) {
+            for (let i = 0; i < count; i++) {
+                const block = document.createElement('div');
+                block.className = `block ${colorClass}`;
+                block.id = `blk-${nextId++}`;
+                addDragListeners(block);
+
+                // Ensure reset styles
+                block.style.margin = '0';
+                block.style.top = '0';
+                block.style.left = '0';
+
+                parentElement.appendChild(block);
+            }
+        }
+
+        function checkAnswer() {
+            if (isProcessingSuccess) return;
+
+            const userValStr = answerInput.value;
+            if (userValStr === '') return;
+
+            const userVal = parseInt(userValStr);
+            const actualCount = trayCombined.children.length;
+
+            if (userVal === actualCount) {
+                handleSuccess();
+            } else {
+                handleIncorrect();
+            }
+        }
+
+        function handleSuccess() {
+            if (isProcessingSuccess) return;
+            isProcessingSuccess = true;
+
+            answerInput.classList.add('correct');
+            successOverlay.classList.add('show');
+            playFanfare();
+
+            setTimeout(() => {
+                generateRandomProblem();
+            }, 3000);
+        }
+
+        function handleIncorrect() {
+            answerInput.classList.add('error');
+            closeOverlay.classList.add('show');
+
+            setTimeout(() => {
+                closeOverlay.classList.remove('show');
+                answerInput.classList.remove('error');
+                answerInput.value = ''; // Clear input to prompt retry
+                answerInput.focus();
+            }, 1000);
+        }
+
+        function generateRandomProblem() {
+            const sum = Math.floor(Math.random() * 9) + 2;
+            const left = Math.floor(Math.random() * (sum - 1)) + 1;
+            const right = sum - left;
+
+            inputLeft.value = left;
+            inputRight.value = right;
+            parseAndReset();
+        }
+
+        // --- Settings ---
+        function openSettings() { settingsModal.classList.add('show'); }
+        function closeSettings() { settingsModal.classList.remove('show'); }
+
+        function updateSettings() {
+            const root = document.documentElement;
+            root.style.setProperty('--accent-red', colorLeftInput.value);
+            root.style.setProperty('--accent-yellow', colorRightInput.value);
+            root.style.setProperty('--block-size', sizeSlider.value + 'px');
+        }
+
+        // --- Audio ---
+        function playFanfare() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const now = audioCtx.currentTime;
+            playTone(523.25, now, 0.1);
+            playTone(659.25, now + 0.1, 0.1);
+            playTone(783.99, now + 0.2, 0.1);
+            playTone(1046.50, now + 0.3, 0.6);
+        }
+
+        function playTone(freq, time, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+
+        // --- Drag & Drop ---
+        let dragState = {
+            isDragging: false, element: null, placeholder: null,
+            startX: 0, startY: 0, offsetX: 0, offsetY: 0, originalParent: null
+        };
+
+        function addDragListeners(el) {
+            el.addEventListener('mousedown', onDragStart);
+            el.addEventListener('touchstart', onDragStart, { passive: false });
+        }
+
+        function onDragStart(e) {
+            e.preventDefault();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            dragState.isDragging = true;
+            dragState.element = e.target;
+            dragState.originalParent = e.target.parentElement;
+
+            dragState.placeholder = document.createElement('div');
+            dragState.placeholder.className = 'block-placeholder';
+            dragState.originalParent.insertBefore(dragState.placeholder, dragState.element);
+
+            const rect = dragState.element.getBoundingClientRect();
+
+            // Center the block on the cursor/finger for consistent behavior
+            // This prevents "jumping" due to edge clicks or scale transforms
+            dragState.offsetX = rect.width / 2;
+            dragState.offsetY = rect.height / 2;
+
+            dragState.element.classList.add('dragging');
+            dragState.element.style.width = rect.width + 'px';
+            dragState.element.style.height = rect.height + 'px';
+            dragState.element.style.margin = '0';
+            dragState.element.style.top = '0';
+            dragState.element.style.left = '0';
+
+            document.body.appendChild(dragState.element);
+            moveElement(clientX, clientY);
+
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+            document.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('touchend', onDragEnd);
+        }
+
+        function onDragMove(e) {
+            if (!dragState.isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            moveElement(clientX, clientY);
+            highlightTrays(clientX, clientY);
+        }
+
+        function moveElement(x, y) {
+            if (dragState.element) {
+                dragState.element.style.transform = `translate(${x - dragState.offsetX}px, ${y - dragState.offsetY}px)`;
+            }
+        }
+
+        function onDragEnd(e) {
+            if (!dragState.isDragging) return;
+
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            const dropTarget = getTrayAt(clientX, clientY);
+
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            document.removeEventListener('touchmove', onDragMove);
+            document.removeEventListener('touchend', onDragEnd);
+
+            dragState.element.classList.remove('dragging');
+            dragState.element.style.position = '';
+            dragState.element.style.transform = '';
+            dragState.element.style.width = '';
+            dragState.element.style.height = '';
+
+            trays.forEach(t => t.classList.remove('drag-over'));
+
+            if (dropTarget) {
+                dropTarget.appendChild(dragState.element);
+            } else {
+                if (dragState.placeholder.parentNode) {
+                    dragState.placeholder.parentNode.insertBefore(dragState.element, dragState.placeholder);
+                } else {
+                    dragState.originalParent.appendChild(dragState.element);
+                }
+            }
+
+            if (dragState.placeholder && dragState.placeholder.parentNode) {
+                dragState.placeholder.parentNode.removeChild(dragState.placeholder);
+            }
+
+            dragState = { isDragging: false, element: null, placeholder: null };
+            // No checking answer here, user must click "Answer"
+        }
+
+        function getTrayAt(x, y) {
+            for (let tray of trays) {
+                const rect = tray.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                    return tray;
+                }
+            }
+            return null;
+        }
+
+        function highlightTrays(x, y) {
+            trays.forEach(tray => tray.classList.remove('drag-over'));
+            const target = getTrayAt(x, y);
+            if (target) target.classList.add('drag-over');
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
